@@ -1,3 +1,4 @@
 llama-hub==0.0.74
 llama-index==0.9.35
 unstructured==0.11.8
+tiktoken==0.5.2
