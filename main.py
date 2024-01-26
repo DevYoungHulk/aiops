@@ -5,7 +5,7 @@ from llama_index import download_loader
 from llama_hub.github_repo import GithubClient
 from llama_index.tools import QueryEngineTool, ToolMetadata
 from llama_index.node_parser import SentenceSplitter
-from llama_index import ServiceContext, VectorStoreIndex, set_global_service_context,global_service_context
+from llama_index import ServiceContext, VectorStoreIndex, set_global_service_context, global_service_context
 from llama_index.agent import OpenAIAgent
 from llama_index import SimpleDirectoryReader
 from llama_index.callbacks import CallbackManager, TokenCountingHandler
@@ -14,7 +14,8 @@ import tiktoken
 model = "gpt-3.5-turbo"
 llm = OpenAI(temperature=0, model=model)
 token_counter = TokenCountingHandler(
-    tokenizer=tiktoken.encoding_for_model(model).encode
+    tokenizer=tiktoken.encoding_for_model(model).encode,
+    verbose=True
 )
 callback_manager = CallbackManager([token_counter])
 service_context = ServiceContext.from_defaults(llm=llm)
@@ -41,7 +42,8 @@ def buildGithubEngineTool() -> QueryEngineTool:
     docs = loader.load_data(branch="main")
     nodes = node_parser.get_nodes_from_documents(docs)
     print("code nodes size -> "+str(len(nodes)))
-    vector_index = VectorStoreIndex(nodes=nodes,service_context=global_service_context)
+    vector_index = VectorStoreIndex(
+        nodes=nodes, service_context=global_service_context)
     vector_index.storage_context.persist('./cache/github')
     vector_query_engine = vector_index .as_query_engine()
 
@@ -64,7 +66,8 @@ def buildLogEngineTool() -> QueryEngineTool:
 
     nodes = node_parser.get_nodes_from_documents(documents)
     print("log nodes size -> "+str(len(nodes)))
-    vector_index = VectorStoreIndex(nodes=nodes,service_context=global_service_context)
+    vector_index = VectorStoreIndex(
+        nodes=nodes, service_context=global_service_context)
     vector_index.storage_context.persist('./cache/logs')
     vector_query_engine = vector_index .as_query_engine()
 
@@ -100,19 +103,9 @@ if __name__ == "__main__":
         question = input('Input Question：')
         if question == 'exit':
             break
-        response = agent.query(question)
+        elif question == 'clear':
+            agent.chat_history.clear()
+            round = 0
+            print('Chat history have been cleared')
+        response = agent.chat(question)
         print(response)
-        print(
-            "Embedding Tokens: ",
-            token_counter.total_embedding_token_count,
-            "\n",
-            "LLM Prompt Tokens: ",
-            token_counter.prompt_llm_token_count,
-            "\n",
-            "LLM Completion Tokens: ",
-            token_counter.completion_llm_token_count,
-            "\n",
-            "Total LLM Token Count: ",
-            token_counter.total_llm_token_count,
-            "\n",
-        )
